@@ -2,108 +2,144 @@
 using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Support.UI;
 using OpenQA.Selenium.Interactions;
+using System.Drawing;
 using System;
 using NUnit.Framework;
-using OpenQA.Selenium.Firefox;
-using SeleniumExtras.WaitHelpers;
+
 
 namespace SeleniumKJuht
 {
     [TestFixture]
-    public class StartPageTests
+    public class FirstTestCase
     {
         private IWebDriver driver;
         private WebDriverWait wait;
 
+
         [SetUp]
         public void SetUp()
         {
-            // Pane siia oma enda pathi selle driveri jaoks
-            var options = new FirefoxOptions();
-            driver = new FirefoxDriver(@"C:\Users\krist\Downloads\SeleniumJuht\SeleniumKJuht\drivers", options);
-
+            driver = new FirefoxDriver("C:\\Users\\opilane\\source\\repos\\SeleniumKJuht\\SeleniumKJuht\\drivers"); // VÕid puttida oma isiliku pathi oma driveri jaoks
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(15);
             wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
         }
 
         [Test]
-        public void TestNavigation()
+        public void TestHiddenLayers()
         {
-            driver.Navigate().GoToUrl("https://localhost:5173");
+            driver.Navigate().GoToUrl("http://www.uitestingplayground.com/hiddenlayers");
 
-            var loginButton = driver.FindElement(By.LinkText("Login"));
-            loginButton.Click();
-            Assert.That(driver.Url.Contains("/login"), Is.True, "Should navigate to desired location");
+            var btn = driver.FindElement(By.Id("greenButton"));
+            btn.Click();
 
-            driver.Navigate().Back();
-
-            var registerButton = driver.FindElement(By.LinkText("Register"));
-            registerButton.Click();
-            Assert.That(driver.Url.Contains("/register"), Is.True);
-        }
-
-
-        [Test]
-        public void TestContactForm()
-        {
-            driver.Navigate().GoToUrl("https://localhost:5173");
-
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-
-            var nameInput = wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//input[@placeholder='Your Name']")));
-            var emailInput = wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//input[@placeholder='Your Email']")));
-            var messageInput = wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//textarea[@placeholder='Your Message']")));
-            var submitButton = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button[text()='Send Message']")));
-
-            nameInput.Clear();
-            emailInput.Clear();
-            messageInput.Clear();
-
-            nameInput.SendKeys("Test Nimi");
-            emailInput.SendKeys("Nagger@Gmail.com");
-            messageInput.SendKeys("Tervist. Soovin saata complainiga, et teie veeblieht on halb");
-
-            submitButton.Click();
-
-            var responseMessage = wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//p[contains(text(), 'Thank you')]")));
-
-            Assert.That(responseMessage.Displayed, Is.True, "Should show a response message");
-            Assert.That(responseMessage.Text.Contains("Test Nimi"), Is.True, "Response should include the name");
+            try
+            {
+                btn.Click();
+                Assert.Fail("The green button should be disabled after the first click");
+            }
+            catch (WebDriverException)
+            {
+                Assert.Pass("Check passed, as the green button cannot be clicked twice.");
+            }
         }
 
         [Test]
-        public void TestReviewsSection()
+        public void TestClick()
         {
-            driver.Navigate().GoToUrl("https://localhost:5173");
+            driver.Navigate().GoToUrl("http://www.uitestingplayground.com/click");
 
-            var reviewCards = driver.FindElements(By.ClassName("review-card"));
-            Assert.That(reviewCards.Count, Is.EqualTo(1));
+            var nupp = driver.FindElement(By.Id("badButton"));
 
-            var reviewAuthor = reviewCards[0].FindElement(By.TagName("h3"));
-            var reviewText = reviewCards[0].FindElement(By.TagName("p"));
+            new Actions(driver).MoveToElement(nupp).Click().Perform();
 
-            Assert.That(reviewAuthor.Text, Is.EqualTo("Pavlova Tchaikovski"));
-            Assert.That(reviewText.Text, Is.EqualTo("\"This app has changed my financial life!\""));
+            string updatedClass = nupp.GetAttribute("class");
+            Assert.That(updatedClass.Contains("btn-success"), Is.True, "The button did not change to green after being clicked.");
         }
 
         [Test]
-        public void TestFooterSocialLinks()
+        public void TestInput()
         {
-            // Testib, et kas need lingid on olemas
-            driver.Navigate().GoToUrl("https://localhost:5173");
+            driver.Navigate().GoToUrl("http://www.uitestingplayground.com/textinput");
 
-            var socialLinks = driver.FindElements(By.CssSelector(".social-links a"));
-            Assert.That(socialLinks.Count, Is.EqualTo(2));
+            var tekst = driver.FindElement(By.Id("newButtonName"));
+            var nupp = driver.FindElement(By.Id("updatingButton"));
 
-            Assert.That(socialLinks[0].GetDomAttribute("href"),
-                Is.EqualTo("https://twitter.com/ishowspeed"));
-            Assert.That(socialLinks[1].GetDomAttribute("href"),
-                Is.EqualTo("https://instagram.com/blacknigga"));
+            new Actions(driver).Click(tekst).SendKeys("Nagger").Perform();
+            nupp.Click();
 
-            Assert.That(socialLinks[0].GetDomAttribute("target"), Is.EqualTo("_blank"));
-            Assert.That(socialLinks[0].GetDomAttribute("rel"), Is.EqualTo("noopener noreferrer"));
+            Assert.That(nupp.Text, Is.EqualTo("Nagger"), "Button text did not update.");
         }
 
+        [Test]
+        public void TestAlerts()
+        {
+            driver.Navigate().GoToUrl("http://www.uitestingplayground.com/alerts");
+
+            var alrt = driver.FindElement(By.Id("alertButton"));
+            alrt.Click();
+            driver.SwitchTo().Alert().Accept();
+
+            var cnfrm = driver.FindElement(By.Id("confirmButton"));
+            cnfrm.Click();
+            Thread.Sleep(1000);
+            driver.SwitchTo().Alert().Accept();
+
+            var prmt = driver.FindElement(By.Id("promptButton"));
+            prmt.Click();
+            Thread.Sleep(1000);
+            var Alert = driver.SwitchTo().Alert();
+            Alert.SendKeys("Cats");
+            Alert.Accept();
+        }
+
+        [Test]
+        public void TestProgressBar()
+        {
+            driver.Navigate().GoToUrl("http://www.uitestingplayground.com/progressbar");
+
+            var startButton = driver.FindElement(By.Id("startButton"));
+            startButton.Click();
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            int progressValue = 0;
+            wait.Until(d =>
+            {
+                var progressBar = driver.FindElement(By.Id("progressBar"));
+                string progressText = progressBar.Text.Replace("%", "");
+                progressValue = int.Parse(progressText);
+                return progressValue >= 73;
+            });
+
+            if (progressValue >= 75)
+            {
+                var stopButton = driver.FindElement(By.Id("stopButton"));
+                stopButton.Click();
+            }
+
+            var finalProgressBar = driver.FindElement(By.Id("progressBar"));
+            string finalProgressText = finalProgressBar.Text.Replace("%", "");
+            int finalProgressValue = int.Parse(finalProgressText);
+
+            Assert.That(finalProgressValue, Is.EqualTo(75).Within(5),
+                        $"Expected the progress bar to be close to 75%, but it was {finalProgressValue}%.");
+        }
+
+        [Test]
+        public void TestAjaxData()
+        {
+            driver.Navigate().GoToUrl("http://www.uitestingplayground.com/ajax");
+
+            var ajax = driver.FindElement(By.Id("ajaxButton"));
+            ajax.Click();
+
+            wait.Until(d => !d.FindElement(By.Id("spinner")).Displayed);
+
+            var label = wait.Until(d => d.FindElement(By.CssSelector("#content .bg-success")));
+            label.Click();
+
+            string labelText = label.Text;
+            Assert.That(labelText, Is.Not.Empty, "The label text should not be empty after AJAX request.");
+        }
 
         [TearDown]
         public void TearDown()
@@ -111,5 +147,6 @@ namespace SeleniumKJuht
             driver?.Quit();
             driver?.Dispose();
         }
+
     }
 }
